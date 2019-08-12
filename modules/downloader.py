@@ -1,8 +1,8 @@
 import os
 import cv2
 from tqdm import tqdm
-from modules.utils import images_options
-from modules.utils import bcolors as bc
+from OIDv4_ToolKit.modules.utils import images_options
+from OIDv4_ToolKit.modules.utils import bcolors as bc
 from multiprocessing.dummy import Pool as ThreadPool
 
 def download(args, df_val, folder, dataset_dir, class_name, class_code, class_list=None, threads = 20):
@@ -47,9 +47,11 @@ def download(args, df_val, folder, dataset_dir, class_name, class_code, class_li
     else:
         class_name_list = class_name
 
-    download_img(folder, dataset_dir, class_name_list, images_list, threads)
+    downloaded_files = download_img(folder, dataset_dir, class_name_list, images_list, threads)
     if not args.sub:
         get_label(folder, dataset_dir, class_name, class_code, df_val, class_name_list, args)
+
+    return downloaded_files
 
 
 def download_img(folder, dataset_dir, class_name, images_list, threads):
@@ -66,6 +68,7 @@ def download_img(folder, dataset_dir, class_name, images_list, threads):
     download_dir = os.path.join(dataset_dir, image_dir, class_name)
     downloaded_images_list = [f.split('.')[0] for f in os.listdir(download_dir)]
     images_list = list(set(images_list) - set(downloaded_images_list))
+    downloaded_files = []
 
     pool = ThreadPool(threads)
 
@@ -77,13 +80,21 @@ def download_img(folder, dataset_dir, class_name, images_list, threads):
             command = 'aws s3 --no-sign-request --only-show-errors cp s3://open-images-dataset/' + path                    
             commands.append(command)
 
-        list(tqdm(pool.imap(os.system, commands), total = len(commands) ))
+        # list(tqdm(pool.imap(os.system, commands), total = len(commands) ))
+        responses = list(pool.imap(os.system, commands))
+
+
+        for i in range(0, len(responses)):
+            if (responses[i] == 0):
+                downloaded_files.append(images_list[i])
 
         print(bc.INFO + 'Done!' + bc.ENDC)
         pool.close()
         pool.join()
     else:
         print(bc.INFO + 'All images already downloaded.' +bc.ENDC)
+
+    return downloaded_files
 
 
 def get_label(folder, dataset_dir, class_name, class_code, df_val, class_list, args):

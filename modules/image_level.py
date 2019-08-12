@@ -1,19 +1,20 @@
 import os
-from modules.utils import *
-from modules.downloader import *
-from modules.show import *
-from modules.csv_downloader import *
 
-from modules.utils import bcolors as bc
+from OIDv4_ToolKit.modules.utils import *
+from OIDv4_ToolKit.modules.downloader import *
+from OIDv4_ToolKit.modules.show import *
+from OIDv4_ToolKit.modules.csv_downloader import *
+
+from OIDv4_ToolKit.modules.utils import bcolors as bc
 
 def image_level(args, DEFAULT_OID_DIR):
-
 	if not args.Dataset:
 		dataset_dir = os.path.join(DEFAULT_OID_DIR, 'Dataset_nl')
 		csv_dir = os.path.join(DEFAULT_OID_DIR, 'csv_folder_nl')
 	else:
 		dataset_dir = os.path.join(DEFAULT_OID_DIR, args.Dataset)
 		csv_dir = os.path.join(DEFAULT_OID_DIR, 'csv_folder_nl')
+
 
 	name_file_class = 'class-descriptions.csv'
 	CLASSES_CSV = os.path.join(csv_dir, name_file_class)
@@ -36,8 +37,6 @@ def image_level(args, DEFAULT_OID_DIR):
 
 	if args.sub == 'h' or args.sub == 'm':
 
-		logo(args.command)
-
 		if args.type_csv is None:
 			print(bc.FAIL + 'Missing type_csv argument.' + bc.ENDC)
 			exit(1)
@@ -45,7 +44,9 @@ def image_level(args, DEFAULT_OID_DIR):
 			print(bc.FAIL + 'Missing classes argument.' + bc.ENDC)
 			exit(1)
 		if args.multiclasses is None:
-			args.multiclasses = 0
+			args.multiclasses = '0'
+
+		print('multiclasses', args.multiclasses)
 
 		folder = ['train', 'validation', 'test']
 
@@ -60,6 +61,10 @@ def image_level(args, DEFAULT_OID_DIR):
 
 			mkdirs(dataset_dir, csv_dir, args.classes, args.type_csv)
 
+			classes_and_filenames = ([], [])
+
+			print(dataset_dir)
+
 			for classes in args.classes:
 
 				class_name = classes
@@ -73,37 +78,40 @@ def image_level(args, DEFAULT_OID_DIR):
 					name_file = file_list[0]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[0], dataset_dir, class_name, class_code)
+						downloaded_files = download(args, df_val, folder[0], dataset_dir, class_name, class_code)
 					else:
-						download(args, df_val, folder[0], dataset_dir, class_name, class_code, threads = int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[0], dataset_dir, class_name, class_code, threads = int(args.n_threads))
 
 				elif args.type_csv == 'validation':
 					name_file = file_list[1]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[1], dataset_dir, class_name, class_code)
+						downloaded_files = download(args, df_val, folder[1], dataset_dir, class_name, class_code)
 					else:
-						download(args, df_val, folder[1], dataset_dir, class_name, class_code, threads = int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[1], dataset_dir, class_name, class_code, threads = int(args.n_threads))
 
 				elif args.type_csv == 'test':
 					name_file = file_list[2]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[2], dataset_dir, class_name, class_code)
+						downloaded_files = download(args, df_val, folder[2], dataset_dir, class_name, class_code)
 					else:
-						download(args, df_val, folder[2], dataset_dir, class_name, class_code, threads = int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[2], dataset_dir, class_name, class_code, threads = int(args.n_threads))
 
 				elif args.type_csv == 'all':
 					for i in range(3):
 						name_file = file_list[i]
 						df_val = TTV(csv_dir, name_file, args.yes)
 						if not args.n_threads:
- 							download(args, df_val, folder[i], dataset_dir, class_name, class_code)
+ 							downloaded_files = download(args, df_val, folder[i], dataset_dir, class_name, class_code)
 					else:
-						download(args, df_val, folder[i], dataset_dir, class_name, class_code, threads = int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[i], dataset_dir, class_name, class_code, threads = int(args.n_threads))
 				else:
 					print(bc.FAIL + 'csv file not specified' + bc.ENDC)
 					exit(1)
+
+				classes_and_filenames[0].extend(downloaded_files)
+				classes_and_filenames[1].extend(np.repeat(class_name, len(downloaded_files)))
 
 		elif args.multiclasses == '1':
 
@@ -125,31 +133,36 @@ def image_level(args, DEFAULT_OID_DIR):
 					name_file = file_list[0]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[0], dataset_dir, class_name, class_dict[class_name], class_list)
+						downloaded_files = download(args, df_val, folder[0], dataset_dir, class_name, class_dict[class_name], class_list)
 					else:
-						download(args, df_val, folder[0], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[0], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
 
 				elif args.type_csv == 'validation':
 					name_file = file_list[1]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[1], dataset_dir, class_name, class_dict[class_name], class_list)
+						downloaded_files = download(args, df_val, folder[1], dataset_dir, class_name, class_dict[class_name], class_list)
 					else:
-						download(args, df_val, folder[1], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[1], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
 
 				elif args.type_csv == 'test':
 					name_file = file_list[2]
 					df_val = TTV(csv_dir, name_file, args.yes)
 					if not args.n_threads:
-						download(args, df_val, folder[2], dataset_dir, class_name, class_dict[class_name], class_list)
+						downloaded_files = download(args, df_val, folder[2], dataset_dir, class_name, class_dict[class_name], class_list)
 					else:
-						download(args, df_val, folder[2], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
+						downloaded_files = download(args, df_val, folder[2], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
 
 				elif args.type_csv == 'all':
 					for i in range(3):
 						name_file = file_list[i]
 						df_val = TTV(csv_dir, name_file, args.yes)
 						if not args.n_threads:
-							download(args, df_val, folder[i], dataset_dir, class_name, class_dict[class_name], class_list)
+							downloaded_files = download(args, df_val, folder[i], dataset_dir, class_name, class_dict[class_name], class_list)
 						else:
-							download(args, df_val, folder[i], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
+							downloaded_files = download(args, df_val, folder[i], dataset_dir, class_name, class_dict[class_name], class_list, int(args.n_threads))
+
+				classes_and_filenames[0].extend(downloaded_files)
+				classes_and_filenames[1].extend(np.repeat(class_name, len(downloaded_files)))
+
+		return classes_and_filenames
